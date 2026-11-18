@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="bg">#F3F6F8</color>
+    <color name="surface">#FFFFFF</color>
+    <color name="ink">#14212B</color>
+    <color name="muted">#5B6B78</color>
+    <color name="line">#D9E1E7</color>
+    <color name="accent">#1F6F8B</color>
+    <color name="ok">#1D7A4D</color>
+    <color name="ok_soft">#E1F3E9</color>
+    <color name="now">#8A5A00</color>
+    <color name="now_soft">#FFF1CF</color>
+    <color name="warn">#B5481D</color>
+    <color name="warn_soft">#FBE9E1</color>
+</resources>
