@@ -1,0 +1,589 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#1f6f8b">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Traitement">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}[hidden]{display:none!important}</style>
+<title>Mon traitement</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&display=swap">
+<style>
+/* Layout: one column like a pill organiser — a day header, then one compartment per time of day, tabs at the bottom. */
+:root {
+  --bg: #f3f6f8;
+  --surface: #ffffff;
+  --ink: #14212b;
+  --muted: #5b6b78;
+  --line: #d9e1e7;
+  --accent: #1f6f8b;
+  --accent-ink: #ffffff;
+  --ok: #1d7a4d;
+  --ok-soft: #e1f3e9;
+  --warn: #b5481d;
+  --warn-soft: #fbe9e1;
+  --now: #8a5a00;
+  --now-soft: #fff1cf;
+  --morning: #e9a23b;
+  --evening: #4a4fa3;
+  --font-display: "Bricolage Grotesque", "Atkinson Hyperlegible", system-ui, sans-serif;
+  --font-body: "Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --r: 18px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f171d; --surface: #18232b; --ink: #e8eef2; --muted: #9aabb8; --line: #2a3843;
+    --accent: #5fb4d3; --accent-ink: #0b1a21; --ok: #5fcf96; --ok-soft: #173326;
+    --warn: #f08a5f; --warn-soft: #3a2219; --now: #f2c25b; --now-soft: #372b10;
+    --morning: #f0b356; --evening: #8f94ec; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f171d; --surface: #18232b; --ink: #e8eef2; --muted: #9aabb8; --line: #2a3843;
+  --accent: #5fb4d3; --accent-ink: #0b1a21; --ok: #5fcf96; --ok-soft: #173326;
+  --warn: #f08a5f; --warn-soft: #3a2219; --now: #f2c25b; --now-soft: #372b10;
+  --morning: #f0b356; --evening: #8f94ec; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--ink);
+  font-family: var(--font-body); font-size: 18px; line-height: 1.45;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 12px calc(96px + env(safe-area-inset-bottom, 0px));
+}
+.wrap { max-width: 640px; margin: 0 auto; display: grid; gap: 20px; }
+button, input { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+header.day { display: grid; gap: 6px; padding-top: 8px; }
+.daynav { display: flex; align-items: center; gap: 10px; }
+.daynav h1 {
+  flex: 1; min-width: 0; margin: 0; font-family: var(--font-display); font-weight: 800;
+  font-size: clamp(28px, 7vw, 40px); line-height: 1.05; text-wrap: balance; letter-spacing: -0.01em;
+}
+.arrow {
+  flex: none; width: 48px; height: 48px; border-radius: 50%; border: 1px solid var(--line);
+  background: var(--surface); font-size: 22px; display: grid; place-items: center;
+}
+.arrow:disabled { opacity: .35; cursor: default; }
+.sub { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; color: var(--muted); font-size: 16px; }
+.today-link { border: 0; background: none; color: var(--accent); text-decoration: underline; padding: 0; font-size: 16px; }
+.progress { height: 10px; background: var(--line); border-radius: 99px; overflow: hidden; }
+.progress > i { display: block; height: 100%; background: var(--ok); border-radius: 99px; transition: width .3s; }
+
+.slot { display: grid; gap: 10px; }
+.slot h2 {
+  margin: 0; display: flex; align-items: center; gap: 10px;
+  font-family: var(--font-display); font-weight: 600; font-size: 20px;
+}
+.slot h2 .dot { width: 14px; height: 14px; border-radius: 50%; background: var(--morning); }
+.slot.evening h2 .dot { background: var(--evening); }
+.slot h2 small { font-family: var(--font-body); font-weight: 400; color: var(--muted); font-size: 16px; font-variant-numeric: tabular-nums; }
+
+.med {
+  display: grid; grid-template-columns: 60px 1fr; gap: 14px; align-items: center;
+  width: 100%; text-align: left; padding: 16px; border-radius: var(--r);
+  background: var(--surface); border: 2px solid var(--line);
+}
+.med .box {
+  width: 60px; height: 60px; border-radius: 16px; border: 3px solid var(--muted);
+  display: grid; place-items: center; background: transparent;
+}
+.med .box svg { width: 36px; height: 36px; opacity: 0; transform: scale(.6); transition: .2s; }
+.med .info { min-width: 0; display: grid; gap: 2px; }
+.med .name { font-weight: 700; font-size: 21px; letter-spacing: .02em; overflow-wrap: anywhere; }
+.med .dose { font-size: 18px; }
+.med .state { font-size: 16px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.med.taken { border-color: var(--ok); background: var(--ok-soft); }
+.med.taken .box { background: var(--ok); border-color: var(--ok); }
+.med.taken .box svg { opacity: 1; transform: none; color: var(--surface); }
+.med.taken .state { color: var(--ok); font-weight: 700; }
+.med.now { border-color: var(--now); background: var(--now-soft); }
+.med.now .state { color: var(--now); font-weight: 700; }
+.med.late { border-color: var(--warn); background: var(--warn-soft); }
+.med.late .state { color: var(--warn); font-weight: 700; }
+
+.confirm {
+  display: flex; flex-wrap: wrap; gap: 10px; align-items: center; padding: 12px 16px;
+  border-radius: var(--r); background: var(--surface); border: 1px dashed var(--line); font-size: 16px;
+}
+.confirm span { flex: 1 1 180px; }
+.btn {
+  min-height: 48px; padding: 10px 18px; border-radius: 14px; border: 1px solid var(--line);
+  background: var(--surface); font-weight: 700;
+}
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.btn.danger { color: var(--warn); border-color: var(--warn); }
+
+.empty { padding: 20px; border-radius: var(--r); background: var(--surface); border: 1px dashed var(--line); display: grid; gap: 12px; justify-items: start; }
+
+/* History */
+.hist { display: grid; gap: 8px; }
+.hrow {
+  display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center;
+  padding: 12px 16px; background: var(--surface); border-radius: 14px; border: 1px solid var(--line);
+  width: 100%; text-align: left;
+}
+.hrow .d { font-weight: 700; }
+.hrow .meds { display: flex; flex-wrap: wrap; gap: 6px; font-size: 14px; color: var(--muted); }
+.pill { padding: 2px 10px; border-radius: 99px; border: 1px solid var(--line); }
+.pill.ok { background: var(--ok-soft); color: var(--ok); border-color: var(--ok); }
+.pill.no { background: var(--warn-soft); color: var(--warn); border-color: var(--warn); }
+.score { font-variant-numeric: tabular-nums; font-weight: 700; }
+
+/* Settings */
+.list { display: grid; gap: 8px; }
+.item { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 12px 16px; background: var(--surface); border-radius: 14px; border: 1px solid var(--line); }
+.item .t { flex: 1 1 180px; min-width: 0; }
+.item .t b { display: block; }
+.item .t span { color: var(--muted); font-size: 16px; }
+form.edit { display: grid; gap: 12px; padding: 16px; background: var(--surface); border-radius: var(--r); border: 2px solid var(--accent); }
+form.edit h3 { margin: 0; font-family: var(--font-display); }
+label { display: grid; gap: 4px; font-size: 16px; color: var(--muted); }
+input[type=text], input[type=time] {
+  min-height: 52px; padding: 10px 14px; border-radius: 12px; border: 1px solid var(--line);
+  background: var(--bg); color: var(--ink); font-size: 18px; width: 100%;
+}
+.row { display: flex; flex-wrap: wrap; gap: 10px; }
+.note { color: var(--muted); font-size: 15px; }
+h2.sec { margin: 0; font-family: var(--font-display); font-size: 24px; }
+
+nav.tabs {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 5;
+  display: flex; justify-content: center; gap: 6px;
+  background: var(--surface); border-top: 1px solid var(--line);
+  padding: 8px max(16px, env(safe-area-inset-right, 0px)) calc(8px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));
+}
+nav.tabs button {
+  flex: 1; max-width: 200px; min-height: 56px; border: 0; border-radius: 14px; background: transparent;
+  font-weight: 700; font-size: 16px; color: var(--muted);
+}
+nav.tabs button[aria-current="page"] { background: var(--bg); color: var(--accent); }
+.sync { font-size: 14px; }
+.toast {
+  position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(88px + env(safe-area-inset-bottom, 0px));
+  background: var(--ink); color: var(--bg); padding: 10px 18px; border-radius: 99px; font-size: 16px; z-index: 6;
+}
+.alarmbar {
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 7;
+  display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
+  padding: 14px 16px; border-radius: var(--r); background: var(--now); color: var(--surface);
+  font-weight: 700; font-size: 18px; animation: pulse 1.2s ease-in-out infinite alternate;
+}
+.alarmbar span { flex: 1 1 200px; min-width: 0; }
+.alarmbar .btn { background: var(--surface); color: var(--ink); border-color: var(--surface); }
+@keyframes pulse { from { filter: brightness(1); } to { filter: brightness(1.15); } }
+.alarmtoggle { border: 1px solid var(--line); background: var(--surface); border-radius: 99px; padding: 6px 14px; font-size: 15px; min-height: 40px; }
+.alarmtoggle.on { border-color: var(--ok); color: var(--ok); font-weight: 700; }
+.alarmtoggle.wait { border-color: var(--now); color: var(--now); font-weight: 700; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+</head>
+<body>
+
+
+<div class="wrap">
+  <div class="alarmbar" id="alarmbar" role="alert" hidden><span id="alarmtext"></span><button class="btn" id="alarmstop">Arrêter l'alarme</button></div>
+  <main id="view"></main>
+</div>
+<nav class="tabs" aria-label="Sections">
+  <button id="tab-jour" data-v="jour" aria-current="page">Aujourd'hui</button>
+  <button id="tab-hist" data-v="historique">Historique</button>
+  <button id="tab-meds" data-v="medicaments">Médicaments</button>
+</nav>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+(() => {
+  const CACHE_KEY = "mon-traitement-cache-v1";
+  const CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+  const JOURS = ["dimanche","lundi","mardi","mercredi","jeudi","vendredi","samedi"];
+  const MOIS = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
+
+  const S = {
+    meds: [],          // [{id,name,dose,time:"HH:MM"}]
+    days: {},          // { "YYYY-MM-DD": { taken: { medId: "HH:MM" } } }
+    loaded: false,
+    mode: "local",     // "db" when shared between devices
+    view: "jour",
+    offset: 0,         // 0 = today, -1 = yesterday...
+    confirm: null,     // med id awaiting "décocher ?"
+    editing: null,     // med id being edited, "new" for add
+    deleting: null,
+  };
+  let db = null;
+
+  // ---------- helpers ----------
+  const pad = n => String(n).padStart(2, "0");
+  const keyOf = d => d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate());
+  const dateFromOffset = off => { const d = new Date(); d.setHours(12,0,0,0); d.setDate(d.getDate() + off); return d; };
+  const frTime = t => { const [h, m] = (t || "00:00").split(":"); return Number(h) + "h" + m; };
+  const nowHM = () => { const d = new Date(); return pad(d.getHours()) + ":" + pad(d.getMinutes()); };
+  const mins = t => { const [h, m] = (t || "0:0").split(":").map(Number); return h * 60 + m; };
+  const longDate = d => JOURS[d.getDay()] + " " + d.getDate() + " " + MOIS[d.getMonth()];
+  const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
+  const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+  const sortedMeds = () => [...S.meds].sort((a, b) => mins(a.time) - mins(b.time) || a.name.localeCompare(b.name));
+  const uid = () => "m" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+
+  function saveCache() {
+    try { localStorage.setItem(CACHE_KEY, JSON.stringify({ meds: S.meds, days: S.days })); } catch (e) {}
+  }
+  function loadCache() {
+    try {
+      const c = JSON.parse(localStorage.getItem(CACHE_KEY) || "null");
+      if (c) { S.meds = c.meds || []; S.days = c.days || {}; S.loaded = true; }
+    } catch (e) {}
+  }
+  let toastTimer;
+  function toast(msg) {
+    const t = document.getElementById("toast");
+    t.textContent = msg; t.hidden = false;
+    clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.hidden = true; }, 2600);
+  }
+
+  // ---------- writes ----------
+  async function writeDay(key) {
+    saveCache();
+    if (!db) return;
+    try { await db.doc("prises/" + key).set({ date: key, taken: { ...(S.days[key]?.taken || {}) } }); }
+    catch (e) { toast("Pas de connexion : enregistré sur cet appareil seulement"); }
+  }
+  async function writeMeds() {
+    saveCache();
+    if (!db) return;
+    try { await db.doc("config/meds").set({ list: S.meds.map(m => ({ ...m })) }); }
+    catch (e) { toast("Pas de connexion : modification gardée sur cet appareil"); }
+  }
+
+  function setTaken(medId, key, value) {
+    const day = S.days[key] ? { taken: { ...S.days[key].taken } } : { taken: {} };
+    if (value) day.taken[medId] = value; else delete day.taken[medId];
+    S.days = { ...S.days, [key]: day };
+    writeDay(key);
+  }
+
+  // ---------- views ----------
+  function medState(m, key, isToday) {
+    const t = S.days[key]?.taken?.[m.id];
+    if (t) return { cls: "taken", label: "Pris à " + frTime(t) };
+    if (!isToday) return { cls: S.offsetIsPast ? "late" : "", label: "Non coché" };
+    const diff = mins(nowHM()) - mins(m.time);
+    if (diff < -30) return { cls: "", label: "À prendre à " + frTime(m.time) };
+    if (diff < 120) return { cls: "now", label: "À prendre maintenant (" + frTime(m.time) + ")" };
+    return { cls: "late", label: "En retard, prévu à " + frTime(m.time) };
+  }
+
+  function renderJour() {
+    const d = dateFromOffset(S.offset);
+    const key = keyOf(d);
+    const isToday = S.offset === 0;
+    S.offsetIsPast = S.offset < 0;
+    const meds = sortedMeds();
+    const taken = meds.filter(m => S.days[key]?.taken?.[m.id]).length;
+    const pct = meds.length ? Math.round(taken / meds.length * 100) : 0;
+    const label = isToday ? "Aujourd'hui" : S.offset === -1 ? "Hier" : "Jour passé";
+
+    let html = `<header class="day">
+      <div class="daynav">
+        <button class="arrow" id="prev" aria-label="Jour précédent">‹</button>
+        <h1>${cap(longDate(d))}</h1>
+        <button class="arrow" id="next" aria-label="Jour suivant" ${S.offset >= 0 ? "disabled" : ""}>›</button>
+      </div>
+      <div class="sub">
+        <span>${label} · <b>${taken} sur ${meds.length}</b> pris</span>
+        ${isToday ? "" : `<button class="today-link" id="gotoday">Revenir à aujourd'hui</button>`}
+        <span class="sync">${syncLabel()}</span>
+        ${isToday ? alarmToggle() : ""}
+      </div>
+      <div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}"><i style="width:${pct}%"></i></div>
+    </header>`;
+
+    if (!S.loaded) {
+      html += `<div class="empty">Chargement de votre traitement…</div>`;
+    } else if (!meds.length) {
+      html += `<div class="empty"><b>Aucun médicament pour l'instant.</b><span class="note">Ajoutez vos médicaments avec leur dosage et leur heure de prise.</span><button class="btn primary" id="goadd">Ajouter un médicament</button></div>`;
+    } else {
+      const morning = meds.filter(m => mins(m.time) < 15 * 60);
+      const evening = meds.filter(m => mins(m.time) >= 15 * 60);
+      const slot = (title, list, cls) => {
+        if (!list.length) return "";
+        const times = [...new Set(list.map(m => frTime(m.time)))].join(", ");
+        return `<section class="slot ${cls}"><h2><span class="dot"></span>${title}<small>${times}</small></h2>
+          ${list.map(m => {
+            const st = medState(m, key, isToday);
+            const isTaken = st.cls === "taken";
+            let card = `<button class="med ${st.cls}" data-med="${esc(m.id)}" aria-pressed="${isTaken}">
+              <span class="box">${CHECK}</span>
+              <span class="info"><span class="name">${esc(m.name)}</span><span class="dose">${esc(m.dose)} · ${frTime(m.time)}</span><span class="state">${st.label}</span></span>
+            </button>`;
+            if (S.confirm === m.id) {
+              card += `<div class="confirm"><span>Décocher ${esc(m.name)} ? À utiliser seulement si vous l'avez coché par erreur.</span>
+                <button class="btn danger" data-uncheck="${esc(m.id)}">Oui, décocher</button>
+                <button class="btn" data-keep>Garder</button></div>`;
+            }
+            return card;
+          }).join("")}</section>`;
+      };
+      html += slot("Matin", morning, "morning") + slot("Soir", evening, "evening");
+      if (!isToday) html += `<p class="note">Vous consultez un jour passé. Vous pouvez corriger une case si vous avez oublié de la cocher.</p>`;
+    }
+    return html;
+  }
+
+  function renderHist() {
+    const meds = sortedMeds();
+    let rows = "";
+    for (let i = 0; i > -14; i--) {
+      const d = dateFromOffset(i), k = keyOf(d);
+      const t = S.days[k]?.taken || {};
+      const n = meds.filter(m => t[m.id]).length;
+      rows += `<button class="hrow" data-day="${i}">
+        <span><span class="d">${i === 0 ? "Aujourd'hui" : i === -1 ? "Hier" : cap(longDate(d))}</span>
+        <span class="meds">${meds.map(m => `<span class="pill ${t[m.id] ? "ok" : (i < 0 ? "no" : "")}">${esc(m.name)}${t[m.id] ? " " + frTime(t[m.id]) : ""}</span>`).join("")}</span></span>
+        <span class="score">${n}/${meds.length}</span>
+      </button>`;
+    }
+    return `<h2 class="sec">Les 14 derniers jours</h2>
+      <p class="note">Touchez un jour pour le voir ou corriger une case. Vert : pris (avec l'heure). Orange : non coché.</p>
+      <div class="hist">${rows}</div>`;
+  }
+
+  function renderForm(m) {
+    const isNew = !m;
+    m = m || { name: "", dose: "", time: "08:00" };
+    return `<form class="edit" id="medform">
+      <h3>${isNew ? "Ajouter un médicament" : "Modifier " + esc(m.name)}</h3>
+      <label for="f-name">Nom<input type="text" id="f-name" required value="${esc(m.name)}" autocomplete="off" placeholder="ex. QUETIAPINE"></label>
+      <label for="f-dose">Dosage<input type="text" id="f-dose" required value="${esc(m.dose)}" autocomplete="off" placeholder="ex. 600 mg"></label>
+      <label for="f-time">Heure de prise<input type="time" id="f-time" required value="${esc(m.time)}"></label>
+      <div class="row"><button class="btn primary" type="submit">Enregistrer</button><button class="btn" type="button" data-cancel>Annuler</button></div>
+    </form>`;
+  }
+
+  function renderMeds() {
+    const meds = sortedMeds();
+    let html = `<h2 class="sec">Mes médicaments</h2>`;
+    if (S.editing === "new") html += renderForm(null);
+    html += `<div class="list">${meds.map(m => {
+      if (S.editing === m.id) return renderForm(m);
+      let row = `<div class="item"><span class="t"><b>${esc(m.name)}</b><span>${esc(m.dose)} · ${frTime(m.time)}</span></span>
+        <button class="btn" data-edit="${esc(m.id)}">Modifier</button>
+        <button class="btn danger" data-del="${esc(m.id)}">Retirer</button></div>`;
+      if (S.deleting === m.id) row += `<div class="confirm"><span>Retirer ${esc(m.name)} de la liste ? L'historique déjà coché reste enregistré.</span>
+        <button class="btn danger" data-delok="${esc(m.id)}">Oui, retirer</button><button class="btn" data-keep>Annuler</button></div>`;
+      return row;
+    }).join("")}</div>`;
+    if (S.editing !== "new") html += `<div><button class="btn primary" id="addbtn">Ajouter un médicament</button></div>`;
+    html += `<p class="note">${S.mode === "db"
+      ? "Vos cases et votre liste sont partagées entre votre téléphone et votre tablette : cochez sur l'un, c'est coché sur l'autre."
+      : "Les cases sont enregistrées sur cet appareil."}
+      Cette application ne remplace pas l'avis de votre médecin : changez un dosage seulement sur sa prescription.</p>`;
+    return html;
+  }
+
+  function syncLabel() {
+    if (S.mode === "db") return "● Synchronisé téléphone et tablette";
+    return "";
+  }
+
+  function render() {
+    const v = document.getElementById("view");
+    v.innerHTML = S.view === "historique" ? renderHist() : S.view === "medicaments" ? renderMeds() : renderJour();
+    document.querySelectorAll("nav.tabs button").forEach(b => b.setAttribute("aria-current", b.dataset.v === S.view ? "page" : "false"));
+    v.style.display = "grid"; v.style.gap = "20px";
+  }
+
+  function go(view) {
+    S.view = view; S.confirm = null; S.editing = null; S.deleting = null;
+    if (view === "jour") S.offset = S.offset; // keep
+    try { history.replaceState(null, "", view === "jour" ? location.pathname + location.search : "#" + view); } catch (e) {}
+    render(); window.scrollTo(0, 0);
+  }
+
+  // ---------- events ----------
+  document.querySelector("nav.tabs").addEventListener("click", e => {
+    const b = e.target.closest("button[data-v]"); if (!b) return;
+    if (b.dataset.v === "jour") S.offset = 0;
+    go(b.dataset.v);
+  });
+
+  document.getElementById("view").addEventListener("click", e => {
+    const t = e.target.closest("button"); if (!t) return;
+    const key = keyOf(dateFromOffset(S.offset));
+    if (t.id === "prev") { S.offset--; S.confirm = null; return render(); }
+    if (t.id === "next") { if (S.offset < 0) S.offset++; S.confirm = null; return render(); }
+    if (t.id === "gotoday") { S.offset = 0; return render(); }
+    if (t.id === "alarmtoggle") {
+      if (!Alarm.enabled) { Alarm.enable(); toast("Alarme sonore activée"); }
+      else if (!Alarm.ready()) { Alarm.unlock(); }
+      else { Alarm.disable(); toast("Alarme sonore désactivée"); }
+      return render();
+    }
+    if (t.id === "alarmtest") { Promise.resolve(Alarm.unlock()).then(() => Alarm.beep()); return; }
+    if (t.id === "goadd" || t.id === "addbtn") { S.view = "medicaments"; S.editing = "new"; return render(); }
+    if (t.dataset.med) {
+      const id = t.dataset.med;
+      if (S.days[key]?.taken?.[id]) { S.confirm = S.confirm === id ? null : id; return render(); }
+      const stamp = S.offset === 0 ? nowHM() : (S.meds.find(m => m.id === id)?.time || nowHM());
+      setTaken(id, key, stamp); S.confirm = null; Alarm.check();
+      if (navigator.vibrate) { try { navigator.vibrate(30); } catch (err) {} }
+      toast("Coché : " + (S.meds.find(m => m.id === id)?.name || ""));
+      return render();
+    }
+    if (t.dataset.uncheck) { setTaken(t.dataset.uncheck, key, null); S.confirm = null; return render(); }
+    if ("keep" in t.dataset) { S.confirm = null; S.deleting = null; return render(); }
+    if (t.dataset.day !== undefined) { S.offset = Number(t.dataset.day); return go("jour"); }
+    if (t.dataset.edit) { S.editing = t.dataset.edit; S.deleting = null; return render(); }
+    if (t.dataset.del) { S.deleting = t.dataset.del; S.editing = null; return render(); }
+    if (t.dataset.delok) { S.meds = S.meds.filter(m => m.id !== t.dataset.delok); S.deleting = null; writeMeds(); toast("Médicament retiré"); return render(); }
+    if ("cancel" in t.dataset) { S.editing = null; return render(); }
+  });
+
+  document.getElementById("view").addEventListener("submit", e => {
+    e.preventDefault();
+    const name = document.getElementById("f-name").value.trim();
+    const dose = document.getElementById("f-dose").value.trim();
+    const time = document.getElementById("f-time").value || "08:00";
+    if (!name || !dose) return;
+    if (S.editing === "new") S.meds = [...S.meds, { id: uid(), name, dose, time }];
+    else S.meds = S.meds.map(m => m.id === S.editing ? { ...m, name, dose, time } : m);
+    S.editing = null; writeMeds(); toast("Enregistré"); render();
+  });
+
+  // ---------- sound alarm ----------
+  // Rings at each dose time while the app is open, until the dose is ticked or the alarm is stopped.
+  const ALARM_KEY = "mon-traitement-alarme";
+  const Alarm = {
+    enabled: false, ctx: null, ringing: false, loop: null, dismissed: new Set(),
+    init() { try { this.enabled = localStorage.getItem(ALARM_KEY) === "1"; } catch (e) {} },
+    ready() { return !!this.ctx && this.ctx.state === "running"; },
+    unlock() {
+      try {
+        if (!this.ctx) { const AC = window.AudioContext || window.webkitAudioContext; if (AC) this.ctx = new AC(); }
+        if (this.ctx && this.ctx.state !== "running") return this.ctx.resume().then(() => { render(); this.check(); }).catch(() => {});
+      } catch (e) {}
+      return Promise.resolve();
+    },
+    enable() { this.enabled = true; try { localStorage.setItem(ALARM_KEY, "1"); } catch (e) {} Promise.resolve(this.unlock()).then(() => { this.beep(); this.check(); render(); }); },
+    disable() { this.enabled = false; try { localStorage.setItem(ALARM_KEY, "0"); } catch (e) {} this.stop(); },
+    beep() {
+      const c = this.ctx; if (!c || c.state !== "running") return;
+      const t0 = c.currentTime + 0.02;
+      [0, 0.28, 0.56, 1.1, 1.38, 1.66].forEach((dt, i) => {
+        const o = c.createOscillator(), g = c.createGain();
+        o.type = "square"; o.frequency.value = i % 3 === 2 ? 1320 : 990;
+        g.gain.setValueAtTime(0.0001, t0 + dt);
+        g.gain.exponentialRampToValueAtTime(0.35, t0 + dt + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.0001, t0 + dt + 0.22);
+        o.connect(g).connect(c.destination); o.start(t0 + dt); o.stop(t0 + dt + 0.25);
+      });
+      if (navigator.vibrate) { try { navigator.vibrate([400, 200, 400, 200, 400]); } catch (e) {} }
+    },
+    due() {
+      const key = keyOf(new Date()), now = mins(nowHM());
+      return sortedMeds().filter(m => {
+        const diff = now - mins(m.time);
+        return diff >= 0 && diff < 120 && !S.days[key]?.taken?.[m.id] && !this.dismissed.has(key + "|" + m.time);
+      });
+    },
+    check() {
+      const due = this.enabled && S.loaded ? this.due() : [];
+      const bar = document.getElementById("alarmbar");
+      if (!due.length) { this.stop(); return; }
+      document.getElementById("alarmtext").textContent =
+        "C'est l'heure : " + due.map(m => m.name + " " + m.dose).join(", ") + ". Cochez une fois pris.";
+      bar.hidden = false;
+      if (!this.ringing) {
+        this.ringing = true; this.beep();
+        this.loop = setInterval(() => this.beep(), 4000);
+      }
+    },
+    stop() {
+      this.ringing = false; clearInterval(this.loop); this.loop = null;
+      document.getElementById("alarmbar").hidden = true;
+    },
+    dismiss() {
+      const key = keyOf(new Date());
+      this.due().forEach(m => this.dismissed.add(key + "|" + m.time));
+      this.stop();
+    },
+  };
+  Alarm.init();
+  // Browsers only allow sound after a touch: the first touch anywhere unlocks it.
+  document.addEventListener("pointerdown", () => { if (Alarm.enabled && !Alarm.ready()) Alarm.unlock(); }, { capture: true });
+  document.getElementById("alarmstop").addEventListener("click", () => { Alarm.dismiss(); toast("Alarme arrêtée. Pensez à cocher votre médicament."); });
+  setInterval(() => Alarm.check(), 15000);
+
+  function alarmToggle() {
+    let cls = "", txt = "Alarme sonore : désactivée";
+    if (Alarm.enabled && Alarm.ready()) { cls = "on"; txt = "Alarme sonore : activée"; }
+    else if (Alarm.enabled) { cls = "wait"; txt = "Touchez ici pour autoriser le son"; }
+    return `<button class="alarmtoggle ${cls}" id="alarmtoggle" aria-pressed="${Alarm.enabled}">${txt}</button>`
+      + (Alarm.enabled && Alarm.ready() ? ` <button class="today-link" id="alarmtest">Tester le son</button>` : "");
+  }
+
+  // Refresh statuses every 30 s, and roll over to the new day at midnight.
+  let lastKey = keyOf(new Date());
+  setInterval(() => {
+    const k = keyOf(new Date());
+    if (k !== lastKey) { lastKey = k; S.offset = 0; }
+    if (S.view === "jour" && !S.confirm) render();
+  }, 30000);
+  document.addEventListener("visibilitychange", () => { if (!document.hidden && S.view === "jour" && !S.confirm) render(); });
+
+  // ---------- start ----------
+  const h = (location.hash || "").slice(1);
+  if (h === "historique" || h === "medicaments") S.view = h;
+  loadCache();
+  render();
+
+  (async () => {
+    let cap = null;
+    try { cap = window.claude?.use ? await window.claude.use("db") : null; } catch (e) { cap = null; }
+    if (!cap) {
+      if (!S.meds.length && !localStorage.getItem(CACHE_KEY)) {
+        S.meds = [
+          { id: "ritaline", name: "RITALINE", dose: "60 mg", time: "08:00" },
+          { id: "quetiapine", name: "QUETIAPINE", dose: "600 mg", time: "21:30" },
+          { id: "teralithe", name: "TERALITHE", dose: "1600 mg", time: "21:30" },
+        ];
+        saveCache();
+      }
+      S.loaded = true; S.mode = "local"; render(); return;
+    }
+    db = cap; S.mode = "db";
+    let gotMeds = false;
+    const timer = setTimeout(() => { if (!gotMeds) { S.loaded = true; toast("Connexion lente : affichage de la dernière version enregistrée"); render(); } }, 10000);
+    db.doc("config/meds").onSnapshot(snap => {
+      gotMeds = true; clearTimeout(timer);
+      if (snap.exists) S.meds = (snap.data().list || []).map(m => ({ ...m }));
+      else if (!snap.metadata?.fromCache) S.meds = [];
+      S.loaded = true; saveCache();
+      if (!S.editing) render();
+    }, () => { clearTimeout(timer); S.loaded = true; render(); });
+    db.collection("prises").orderBy("date", "desc").limit(60).onSnapshot(snap => {
+      const days = { ...S.days };
+      snap.docs.forEach(d => { const v = d.data(); if (v && v.date) days[v.date] = { taken: { ...(v.taken || {}) } }; });
+      S.days = days; saveCache();
+      if (!S.editing) render();
+    }, () => {});
+  })();
+})();
+
+// Offline: works without internet once opened from a web address (https).
+if ("serviceWorker" in navigator && location.protocol === "https:") {
+  navigator.serviceWorker.register("sw.js").catch(() => {});
+}
+</script>
+
+</body>
+</html>
